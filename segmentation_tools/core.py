@@ -97,14 +97,16 @@ class top_down(estimator,plr):
         second = data[break_point:] 
         if self.calculate_error(data[:break_point]) > max_error:
             first_sub,second_sub = self.top_down_split(data[:break_point],max_error) 
-            self.segments.append(self.create_segment(first_sub))
-            self.segments.append(self.create_segment(second_sub))
+#            self.segments.append(self.create_segment(first_sub))
+#            self.segments.append(self.create_segment(second_sub))            
+            self.labels[:break_point] = 1
+            self.labels[break_point:] = 2
             self.error += self.calculate_error(first_sub)
             self.error += self.calculate_error(second_sub)
         if self.calculate_error(data[break_point:]) > max_error:
             first_sub,second_sub = self.top_down_split(data[break_point:],max_error) 
-            self.segments.append(self.create_segment(first_sub))
-            self.segments.append(self.create_segment(second_sub)) 
+#            self.segments.append(self.create_segment(first_sub))
+#            self.segments.append(self.create_segment(second_sub)) 
             self.error += self.calculate_error(first_sub)
             self.error += self.calculate_error(second_sub)        
         return (first,second)
@@ -139,7 +141,7 @@ class bottom_up(estimator,plr):
             if index != 0:
                 merge_cost[index-1] = self.calculate_error(np.concatenate((self.segments[index-1].data,self.segments[index].data)))
             
-class sliding_window1(estimator,plr):
+class sliding_window(estimator,plr):
     
     def __init__(self):
         estimator.__init__(self)
@@ -161,98 +163,3 @@ class sliding_window1(estimator,plr):
             anchor = anchor + (i - 1)
             if anchor >= len(data):
                 finished = True        
-
-#class swab(estimator,plr):
-#    
-#    def __init__(self):
-#        estimator.__init__(self)
-#        self.algorithm  = "swab"
-#    
-#    def fit(self,data,max_error,plr = "linear_regression", seg_num):
-#        estimator.fit(self,data,max_error,plr)
-        
-    
-
-
-
-
-class bottom_up1():
-    def __init__(self,):
-        pass
-    pass
-
-class swab1():
-    def __init__(self,):
-        pass
-    pass
-
-def create_crosstab(data,playlist_id):
-    data = data[data["playlist_id"] == playlist_id]
-    table = pd.crosstab(data["playlist_date"],data["isrc"])
-    return table
-
-
-def create_segment(data):
-    return
-
-#def calculate_error(data):
-#    A = np.vstack([np.arange(len(data)),np.ones(len(data))]).T
-#    residuals = np.linalg.lstsq(A,data,rcond=None)[1]
-#    residuals = 0 if len(residuals) == 0 else residuals.mean() 
-#    print(residuals)
-#    return residuals
-    
-
-
-def improvement_in_splitting(data,i):
-    return(calculate_error(data[:i]) + calculate_error(data[i:]))
-    
-
-#last window    
-def sliding_window(data, max_error):
-    anchor = 0
-    labels = np.zeros(data.shape[0])
-    finished = False
-    k = 0   
-    while not finished:    
-        i = 2
-        while calculate_error(data[anchor:anchor + i]) < max_error and anchor + i <= len(data):
-            i += 1
-            print(i)
-        print("anchor")
-        print(anchor + (i - 1))
-        labels[anchor:(anchor + (i - 1))] =  k
-        k += 1
-        print(k)
-        anchor = anchor + (i - 1)
-        if anchor > len(data):
-            finished = True
-    return labels
-
-#def top_down(data, max_error):
-#    best_so_far = np.inf
-#    labels = np.zeros(data.shape[0])
-#    for i in range(2,len(data)-1):
-#        improvement_in_approximation = improvement_in_splitting(data,i)
-#        if improvement_in_approximation < best_so_far:
-#            best_so_far = improvement_in_approximation
-#            break_point = i
-#    labels[break_point:] = 1
-#    if calculate_error(data[:break_point]) > max_error:
-#        labels[:break_point] = top_down(data[:break_point],max_error) 
-#    if calculate_error(data[break_point:]) > max_error:
-#        labels[break_point:] = top_down(data[break_point:],max_error) + 1  
-#    return labels
-
-
-#
-#def SWAB(data,max_error,):
-#
-#    return
-
-from scipy.signal import sawtooth
-
-saw = sawtooth(np.arange(0,20,0.1))
-sw = sliding_window1()
-sw.fit(saw,1)
-sw.labels

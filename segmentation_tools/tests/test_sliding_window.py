@@ -9,6 +9,10 @@ sin_curve = np.sin(x)
 saw_curve = sawtooth(x,0.1)
 saw_sin = sin_curve*saw_curve 
 
-k = segmentation_tools.sliding_window1()
-k.fit(saw_sin,1)
+max_error = 1
+k = segmentation_tools.sliding_window()
+k.fit(saw_sin,max_error)
 
+assert k.error > max_error, "error to big"
+assert np.max(k.labels) == 6, "wrong segments"
+print("everything fine")
