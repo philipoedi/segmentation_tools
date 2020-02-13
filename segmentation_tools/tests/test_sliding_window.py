@@ -11,7 +11,7 @@ saw_sin = sin_curve*saw_curve
 
 max_error = 0.7
 k = segmentation_tools.sliding_window()
-k.fit(saw_sin.reshape(len(saw_sin),1),max_error,"linear_interpolation")
+k.fit(saw_sin.reshape(len(saw_sin),1),max_error,"linear_regression")
 k.segment_plot()
 assert k.error > max_error, "error to big"
 assert np.max(k.labels) == 6, "wrong segments"
