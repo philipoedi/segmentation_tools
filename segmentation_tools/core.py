@@ -7,25 +7,26 @@ Created on Fri Jan 24 11:41:27 2020
 
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 import pdb
+
 #to do:
 #swab implementation
 #bottom up , wenn keine segemente
-#absolute error
-#rmse error
-#linear interpolation
+#add different error types: absolute error,squared
 #indices instead of data
-#max error, error metrics, total_max error, error_per_segment
-#num segments, labels,
-#interplolate, regress
-# errors, absolute difference
+#develop better test cases
+#for loop optimization
+#max_error ?
+#linear interpolation anpassen, steigung ausrechnen usw.
 
-def add(a,b):
-    return a+b
 
-class segment:
-    def __init__(self,data):
+class segment():
+    """
+    """
+    def __init__(self,data,error):
         self.data = data
+        self.error = error
     
         
 class estimator:
@@ -34,9 +35,11 @@ class estimator:
     def __init__(self):
         self.max_error = None
         self.labels = None
+        self.data = None
         self.algorithm = None
         self.error = 0
         self.plr = None
+        self.segments = list()
         self.calculate_error = None
         self.segment_borders = list()
         self.labels = None
@@ -44,6 +47,7 @@ class estimator:
     def fit(self,data,max_error,plr = "linear_regression"):
         self.labels = np.zeros(data.shape[0])
         self.max_error = max_error
+        self.data = data
         self.plr = plr
         if plr == "linear_regression":
             self.calculate_error = self.linear_regression      
@@ -51,17 +55,22 @@ class estimator:
             self.calculate_error = self.linear_interpolation
         else:
             print("wrong plr")
-            
-    def calculate_error_r(self,data):
-        A = np.vstack([np.arange(len(data)),np.ones(len(data))]).T
-        residuals = np.linalg.lstsq(A,data,rcond=None)[1]
-        residuals = 0 if len(residuals) == 0 else residuals.mean() 
-        return residuals
+    
+    def segment_plot(self,dim = 0):
+        colors = {0:"r",1:"b"}
+        k = 0
+        for i in range(len(self.segments)):
+            plot_data = self.segments[i].data[:,0]
+            plt.plot(np.arange(k,k+len(plot_data)),plot_data, colors[i%2])
+            k = len(plot_data) + k
+        plt.show
     
     def create_segment(self,data):
-        return segment(data)
+        return segment(data,self.calculate_error(data))
 
 class plr:
+    """
+    """
     def linear_regression(self,data):
         A = np.vstack([np.arange(len(data)),np.ones(len(data))]).T
         residuals = np.linalg.lstsq(A,data,rcond=None)[1]
@@ -73,6 +82,8 @@ class plr:
         
 
 class top_down(estimator,plr):
+    """
+    """
     def __init__(self):
         estimator.__init__(self)
         self.algorithm = "top down"
@@ -80,25 +91,30 @@ class top_down(estimator,plr):
     def improvement_in_splitting(self,data,i):
         return(self.calculate_error(data[:i]) + self.calculate_error(data[i:]))
 
-    def top_down_split(self,data,max_error,side = "after"):
+    def top_down_split(self,data,max_error):
         best_so_far = np.inf
         for i in range(2,len(data)-1):
             improvement_in_approximation = self.improvement_in_splitting(data,i)
             if improvement_in_approximation < best_so_far:
                 best_so_far = improvement_in_approximation
                 break_point = i
-                
+        #before after        
         self.segment_borders.append(break_point + self.segment_borders[-1])
+        
         if self.calculate_error(data[:break_point]) > max_error and len(data[:break_point]) > 2:
-            self.top_down_split(data[:break_point],max_error,side="before")             
+            self.top_down_split(data[:break_point],max_error)             
         else: 
             self.error += self.calculate_error(data[:break_point])
+            self.segments.append(self.create_segment(data[:break_point]))
+            
         if self.calculate_error(data[break_point:]) > max_error and len(data[break_point:]) > 2:
-            self.top_down_split(data[break_point:],max_error,side="after") 
+            self.top_down_split(data[break_point:],max_error) 
         else: 
             self.error += self.calculate_error(data[break_point:])
+            self.segments.append(self.create_segment(data[break_point:]))
     
     def fit(self,data,max_error,plr = "linear_interpolation"):
+        #interpolation anpassen
         estimator.fit(self,data,max_error,plr)  
         self.segment_borders.append(0)
         self.top_down_split(data,max_error)       
@@ -110,7 +126,6 @@ class top_down(estimator,plr):
             self.labels[j:i] = k
             j = i
             k += 1
-        #labels einfügen
         
 class bottom_up(estimator,plr):
     
@@ -123,8 +138,8 @@ class bottom_up(estimator,plr):
                        
         for i in range(0,len(data)-2,2):
             self.segments.append(self.create_segment(data[i:i+2]))
-        merge_cost = np.zeros(len(self.segments)-1)
         
+        merge_cost = np.zeros(len(self.segments)-1)        
         for i in range(len(self.segments)-1):
             merge_cost[i] = self.calculate_error(np.concatenate((self.segments[i].data,self.segments[i+1].data)))
         
@@ -137,6 +152,7 @@ class bottom_up(estimator,plr):
                 merge_cost[index] = self.calculate_error(np.concatenate((self.segments[index].data,self.segments[index+1].data)))
             if index != 0:
                 merge_cost[index-1] = self.calculate_error(np.concatenate((self.segments[index-1].data,self.segments[index].data)))
+        self.labels = np.concatenate([np.ones(len(self.segments[i].data))*i for i in range(len(self.segments))])
             
 class sliding_window(estimator,plr):
     
@@ -153,6 +169,7 @@ class sliding_window(estimator,plr):
             i = 2
             while self.calculate_error(data[anchor:anchor + i]) < max_error and anchor + i <= len(data):
                 i += 1
+            self.segments.append(self.create_segment(data[anchor:anchor + i -1]))
             self.labels[anchor:(anchor + (i - 1))] = k
             self.segment_borders.append(anchor + (i - 1))
             self.error += self.calculate_error(data[anchor:anchor + i - 1])
