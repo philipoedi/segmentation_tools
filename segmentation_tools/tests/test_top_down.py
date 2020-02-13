@@ -8,6 +8,7 @@ Created on Thu Feb  6 15:25:05 2020
 # -*- coding: utf-8 -*-
 import numpy as np
 from scipy.signal import sawtooth
+import matplotlib.pyplot as plt
 
 import segmentation_tools
 
@@ -17,11 +18,39 @@ saw_curve = sawtooth(x,0.1)
 saw_sin = sin_curve*saw_curve 
 
 #max_error = 1
-max_error = 0.1
+max_error = 0.5
 k = segmentation_tools.top_down()
-k.fit(saw_sin.reshape(len(saw_sin),1),max_error)
+k.fit(saw_sin.reshape(len(saw_sin),1),max_error,"linear_regression")
 print(k.segment_borders)
+k.segment_plot()
 
 assert k.error > max_error, "error to big"
 assert np.max(k.labels) == 6, "wrong segments"
 print("everything fine")
+
+
+step = np.zeros(len(x))
+size = int(len(step) / 4)
+step[:size] = step[:size]+1
+step[2*size:3*size] = step[2*size:3*size]+1
+plt.plot(step)
+
+
+#step function
+k = segmentation_tools.top_down()
+
+print("check step function segmentation with linear regression")
+k.fit(step.reshape(len(saw_sin),1),max_error,"linear_regression")
+assert k.error < max_error, "error to big"
+assert np.max(k.labels) == 3, "wrong segments"
+print("everything fine")
+
+print("check step function segmentation with linear interpolation")
+k.fit(step.reshape(len(saw_sin),1),max_error,"linear_interpolation")
+assert k.error < max_error, "error to big"
+assert np.max(k.labels) == 3, "wrong segments"
+print("everything fine")
+
+plt.plot(k.labels)
+plt.plot(step)
+plt.show()
