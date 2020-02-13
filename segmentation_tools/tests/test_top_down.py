@@ -16,9 +16,11 @@ sin_curve = np.sin(x)
 saw_curve = sawtooth(x,0.1)
 saw_sin = sin_curve*saw_curve 
 
-max_error = 1
+#max_error = 1
+max_error = 0.1
 k = segmentation_tools.top_down()
-k.fit(saw_sin,max_error)
+k.fit(saw_sin.reshape(len(saw_sin),1),max_error)
+print(k.segment_borders)
 
 assert k.error > max_error, "error to big"
 assert np.max(k.labels) == 6, "wrong segments"
