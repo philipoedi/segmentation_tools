@@ -72,6 +72,7 @@ class plr:
     """
     """
     def linear_regression(self,data):
+        pdb.set_trace()
         A = np.vstack([np.arange(len(data)),np.ones(len(data))]).T
         residuals = np.linalg.lstsq(A,data,rcond=None)[1]
         residuals = 0 if len(residuals) == 0 else residuals.mean()
@@ -177,3 +178,17 @@ class sliding_window(estimator,plr):
             anchor = anchor + (i - 1)
             if anchor >= len(data):
                 finished = True        
+#                
+#class SWAB(estimator,plr):
+#    
+#    def __init__(self):
+#        estimator.__init__(self)
+#        self.algorithm = "SWAB"
+#        
+#    def fit(self,data,max_error,plr = "linear_interpolation",seg_num = 5):
+#        estimator.fit(self,data,max_error,plr)
+#        w = int(len(data)/seg_num)
+#        lower_bound = w/2
+#        upper_bound = w*2   
+#        while
+            
