@@ -7,7 +7,7 @@ Created on Fri Jan 24 11:41:27 2020
 
 import pandas as pd
 import numpy as np
-#import pdb
+import pdb
 #to do:
 #swab implementation
 #bottom up , wenn keine segemente
@@ -33,7 +33,6 @@ class estimator:
     """
     def __init__(self):
         #self.data = None
-        self.segments = None
         self.max_error = None
         self.labels = None
         self.algorithm = None
@@ -45,11 +44,8 @@ class estimator:
         
     def fit(self,data,max_error,plr = "linear_regression"):
         self.labels = np.zeros(data.shape[0])
-        #self.data = data
         self.max_error = max_error
         self.plr = plr
-        self.row_num = len(data)
-        self.segments = list()
         if plr == "linear_regression":
             self.calculate_error = self.linear_regression      
         elif plr == "linear_interpolation":
@@ -68,15 +64,14 @@ class estimator:
 
 class plr:
     def linear_regression(self,data):
-        #pdb.set_trace()
         A = np.vstack([np.arange(len(data)),np.ones(len(data))]).T
         residuals = np.linalg.lstsq(A,data,rcond=None)[1]
         residuals = 0 if len(residuals) == 0 else residuals.mean()
         return residuals
     
-    def linear_interpolation(self):
-        pass
-    
+    def linear_interpolation(self,data):
+        return np.sum(np.abs(data[0,:] - data[-1,:]))
+        
 
 class top_down(estimator,plr):
     def __init__(self):
@@ -86,42 +81,40 @@ class top_down(estimator,plr):
     def improvement_in_splitting(self,data,i):
         return(self.calculate_error(data[:i]) + self.calculate_error(data[i:]))
 
-    def top_down_split(self,data,max_error):
+    def top_down_split(self,data,max_error,side = "after"):
         best_so_far = np.inf
-        for i in range(2,self.row_num - 1):
+        #pdb.set_trace()
+        print(len(data)-1)
+        for i in range(2,len(data)-1):
             improvement_in_approximation = self.improvement_in_splitting(data,i)
             if improvement_in_approximation < best_so_far:
                 best_so_far = improvement_in_approximation
                 break_point = i
-        first = data[:break_point]
-        second = data[break_point:] 
-        if self.calculate_error(data[:break_point]) > max_error:
-            first_sub,second_sub = self.top_down_split(data[:break_point],max_error) 
-#            self.segments.append(self.create_segment(first_sub))
-#            self.segments.append(self.create_segment(second_sub))            
-            self.labels[:break_point] = 1
-            self.labels[break_point:] = 2
-            self.error += self.calculate_error(first_sub)
-            self.error += self.calculate_error(second_sub)
-        if self.calculate_error(data[break_point:]) > max_error:
-            first_sub,second_sub = self.top_down_split(data[break_point:],max_error) 
-#            self.segments.append(self.create_segment(first_sub))
-#            self.segments.append(self.create_segment(second_sub)) 
-            self.error += self.calculate_error(first_sub)
-            self.error += self.calculate_error(second_sub)        
-        return (first,second)
+                
+        self.segment_borders.append(break_point + self.segment_borders[-1])
+        if self.calculate_error(data[:break_point]) > max_error and len(data[:break_point]) > 2:
+            self.top_down_split(data[:break_point],max_error,side="before")             
+        else: 
+            self.error += self.calculate_error(data[:break_point])
+        if self.calculate_error(data[break_point:]) > max_error and len(data[break_point:]) > 2:
+            self.top_down_split(data[break_point:],max_error,side="after") 
+        else: 
+            self.error += self.calculate_error(data[break_point:])
     
-    def fit(self,data,max_error,plr = "linear_regression"):
-        estimator.fit(self,data,max_error,plr)        
-        self.top_down_split(data,max_error)
-
+    def fit(self,data,max_error,plr = "linear_interpolation"):
+        estimator.fit(self,data,max_error,plr)  
+        self.segment_borders.append(0)
+        self.top_down_split(data,max_error)       
+        del self.segment_borders[0]
+        #labels einfügen
+        
 class bottom_up(estimator,plr):
     
     def __init__(self):
         estimator.__init__(self)
         self.algorithm  = "bottom up"
     
-    def fit(self,data,max_error,plr = "linear_regression"):
+    def fit(self,data,max_error,plr = "linear_interpolation"):
         estimator.fit(self,data,max_error,plr)
                        
         for i in range(0,len(data)-2,2):
@@ -147,7 +140,7 @@ class sliding_window(estimator,plr):
         estimator.__init__(self)
         self.algorithm  = "sliding window"
     
-    def fit(self,data,max_error,plr = "linear_regression"):
+    def fit(self,data,max_error,plr = "linear_interpolation"):
         estimator.fit(self,data,max_error,plr)                      
         anchor = 0      
         finished = False
