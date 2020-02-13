@@ -32,7 +32,6 @@ class estimator:
     """
     """
     def __init__(self):
-        #self.data = None
         self.max_error = None
         self.labels = None
         self.algorithm = None
@@ -83,8 +82,6 @@ class top_down(estimator,plr):
 
     def top_down_split(self,data,max_error,side = "after"):
         best_so_far = np.inf
-        #pdb.set_trace()
-        print(len(data)-1)
         for i in range(2,len(data)-1):
             improvement_in_approximation = self.improvement_in_splitting(data,i)
             if improvement_in_approximation < best_so_far:
@@ -106,6 +103,13 @@ class top_down(estimator,plr):
         self.segment_borders.append(0)
         self.top_down_split(data,max_error)       
         del self.segment_borders[0]
+        self.segment_borders.append(len(data))
+        j = 0
+        k = 0
+        for i in self.segment_borders:
+            self.labels[j:i] = k
+            j = i
+            k += 1
         #labels einfügen
         
 class bottom_up(estimator,plr):
