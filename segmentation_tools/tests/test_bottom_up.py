@@ -22,9 +22,37 @@ k.fit(saw_sin.reshape(len(saw_sin),1),max_error,"linear_regression")
 print(k.segment_borders)
 k.segment_plot()
 
-assert k.error > max_error, "error to big"
-assert np.max(k.labels) == 6, "wrong segments"
+# check number of labels and segment borders
+np.max(k.labels)+1 == len(k.segment_borders)
+
+# check max_error
+np.max([k.calculate_error(k.segments[i].data) for i in range(len(k.segments))]) < max_error
+
 print("everything fine")
+
+
+
+#max_error = 1
+max_error = 0.5
+k = segmentation_tools.bottom_up()
+k.fit(saw_sin.reshape(len(saw_sin),1),max_error)
+print(k.segment_borders)
+k.segment_plot()
+
+# check number of labels and segment borders
+np.max(k.labels)+1 == len(k.segment_borders)
+
+# check max_error
+np.max([k.calculate_error(k.segments[i].data) for i in range(len(k.segments))]) < max_error
+
+print("everything fine")
+
+
+
+
+
+
+
 
 step = np.zeros(len(x))
 size = int(len(step) / 4)

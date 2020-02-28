@@ -5,20 +5,19 @@ Created on Fri Jan 24 11:41:27 2020
 @author: OediP
 """
 
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import pdb
 
-#to do:
-#swab implementation
-#bottom up , wenn keine segemente
-#add different error types: absolute error,squared
-#indices instead of data
-#develop better test cases
-#for loop optimization
-#max_error ?
-#linear interpolation anpassen, steigung ausrechnen usw.
+# to do:
+# swab implementation
+# bottom up , wenn keine segemente
+# add different error types: absolute error,squared
+# indices instead of data
+# develop better test cases
+# for loop optimization
+# max_error ?
+# linear interpolation anpassen, steigung ausrechnen usw.
 
 
 class segment():
@@ -26,7 +25,6 @@ class segment():
     """
     def __init__(self,data,error):
         self.data = data
-        self.error = error
     
         
 class estimator:
@@ -72,14 +70,17 @@ class plr:
     """
     """
     def linear_regression(self,data):
-        pdb.set_trace()
         A = np.vstack([np.arange(len(data)),np.ones(len(data))]).T
         residuals = np.linalg.lstsq(A,data,rcond=None)[1]
         residuals = 0 if len(residuals) == 0 else residuals.mean()
         return residuals
     
     def linear_interpolation(self,data):
-        return np.sum(np.abs(data[0,:] - data[-1,:]))
+        pdb.set_trace()
+        steps = np.arange(1,len(data)-1,1)
+        pred = np.interp(steps,data[0,:],data[len(data)-1,:])
+        sqrd_error = (data[1:-1,:] - pred)**2
+        return np.mean(sqrd_error)
         
 
 class top_down(estimator,plr):
@@ -154,6 +155,8 @@ class bottom_up(estimator,plr):
             if index != 0:
                 merge_cost[index-1] = self.calculate_error(np.concatenate((self.segments[index-1].data,self.segments[index].data)))
         self.labels = np.concatenate([np.ones(len(self.segments[i].data))*i for i in range(len(self.segments))])
+        borders = np.nonzero(self.labels != np.roll(self.labels,1))
+        self.segment_borders.extend(borders[0].tolist())
             
 class sliding_window(estimator,plr):
     
