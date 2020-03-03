@@ -11,13 +11,11 @@ import pdb
 
 # to do:
 # swab implementation
-# bottom up , wenn keine segemente
 # add different error types: absolute error,squared
+# remove class segmen
 # indices instead of data
 # develop better test cases
 # for loop optimization
-# max_error ?
-# linear interpolation anpassen, steigung ausrechnen usw.
 
 
 class segment():
@@ -41,8 +39,9 @@ class estimator:
         self.calculate_error = None
         self.segment_borders = list()
         self.labels = None
+        self.error_type = None
         
-    def fit(self,data,max_error,plr = "linear_regression"):
+    def fit(self,data,max_error,plr):
         self.labels = np.zeros(data.shape[0])
         self.max_error = max_error
         self.data = data
@@ -76,10 +75,9 @@ class plr:
         return residuals
     
     def linear_interpolation(self,data):
-        pdb.set_trace()
-        steps = np.arange(1,len(data)-1,1)
+        steps = np.arange(0,len(data),1)
         pred = np.interp(steps,data[0,:],data[len(data)-1,:])
-        sqrd_error = (data[1:-1,:] - pred)**2
+        sqrd_error = (data - pred)**2
         return np.mean(sqrd_error)
         
 
@@ -100,8 +98,6 @@ class top_down(estimator,plr):
             if improvement_in_approximation < best_so_far:
                 best_so_far = improvement_in_approximation
                 break_point = i
-        #before after        
-        self.segment_borders.append(break_point + self.segment_borders[-1])
         
         if self.calculate_error(data[:break_point]) > max_error and len(data[:break_point]) > 2:
             self.top_down_split(data[:break_point],max_error)             
@@ -116,19 +112,15 @@ class top_down(estimator,plr):
             self.segments.append(self.create_segment(data[break_point:]))
     
     def fit(self,data,max_error,plr = "linear_interpolation"):
-        #interpolation anpassen
         estimator.fit(self,data,max_error,plr)  
         self.segment_borders.append(0)
-        self.top_down_split(data,max_error)       
-        del self.segment_borders[0]
-        self.segment_borders.append(len(data))
-        j = 0
-        k = 0
-        for i in self.segment_borders:
-            self.labels[j:i] = k
-            j = i
-            k += 1
-        
+        self.top_down_split(data,max_error)               
+        for i in range(len(self.segments)):
+            temp_data = self.segments[i].data
+            self.segment_borders.append(len(temp_data)+self.segment_borders[-1])
+            self.labels[self.segment_borders[-2]:self.segment_borders[-1]] = i            
+        del self.segment_borders[-1]
+            
 class bottom_up(estimator,plr):
     
     def __init__(self):
@@ -145,15 +137,21 @@ class bottom_up(estimator,plr):
         for i in range(len(self.segments)-1):
             merge_cost[i] = self.calculate_error(np.concatenate((self.segments[i].data,self.segments[i+1].data)))
         
-        while np.min(merge_cost) < max_error:
-            index = np.argmin(merge_cost)
-            self.segments[index].data = np.concatenate((self.segments[index].data,self.segments[index+1].data))
-            del self.segments[index+1]
-            merge_cost = np.delete(merge_cost,index)
-            if index < (len(self.segments)-1):
-                merge_cost[index] = self.calculate_error(np.concatenate((self.segments[index].data,self.segments[index+1].data)))
-            if index != 0:
-                merge_cost[index-1] = self.calculate_error(np.concatenate((self.segments[index-1].data,self.segments[index].data)))
+        while True:
+            try: 
+                if np.min(merge_cost) < max_error:
+                    index = np.argmin(merge_cost)
+                    self.segments[index].data = np.concatenate((self.segments[index].data,self.segments[index+1].data))
+                    del self.segments[index+1]
+                    merge_cost = np.delete(merge_cost,index)
+                    if index < (len(self.segments)-1):
+                        merge_cost[index] = self.calculate_error(np.concatenate((self.segments[index].data,self.segments[index+1].data)))
+                    if index != 0:
+                        merge_cost[index-1] = self.calculate_error(np.concatenate((self.segments[index-1].data,self.segments[index].data)))                    
+                else:
+                    break
+            except:
+                break
         self.labels = np.concatenate([np.ones(len(self.segments[i].data))*i for i in range(len(self.segments))])
         borders = np.nonzero(self.labels != np.roll(self.labels,1))
         self.segment_borders.extend(borders[0].tolist())
@@ -181,17 +179,15 @@ class sliding_window(estimator,plr):
             anchor = anchor + (i - 1)
             if anchor >= len(data):
                 finished = True        
-#                
-#class SWAB(estimator,plr):
-#    
-#    def __init__(self):
-#        estimator.__init__(self)
-#        self.algorithm = "SWAB"
-#        
-#    def fit(self,data,max_error,plr = "linear_interpolation",seg_num = 5):
-#        estimator.fit(self,data,max_error,plr)
-#        w = int(len(data)/seg_num)
-#        lower_bound = w/2
-#        upper_bound = w*2   
-#        while
+                
+# class SWAB(estimator,plr):
+    
+#     def __init__(self):
+#         estimator.__init__(self)
+#         self.algorithm = "SWAB"
+        
+#     def fit(self,data,max_error,plr = "linear_interpolation",buffer_size = 100):
+#         estimator.fit(self,data,max_error,plr)
+#         i = 0
+#         while  
             
