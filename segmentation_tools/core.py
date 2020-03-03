@@ -16,6 +16,7 @@ import pdb
 # indices instead of data
 # develop better test cases
 # for loop optimization
+# mehrdimensionalität
 
 
 class segment():
@@ -180,14 +181,29 @@ class sliding_window(estimator,plr):
             if anchor >= len(data):
                 finished = True        
                 
-# class SWAB(estimator,plr):
+class SWAB(estimator,plr):
     
-#     def __init__(self):
-#         estimator.__init__(self)
-#         self.algorithm = "SWAB"
+    def __init__(self):
+        estimator.__init__(self)
+        self.algorithm = "SWAB"
         
-#     def fit(self,data,max_error,plr = "linear_interpolation",buffer_size = 100):
-#         estimator.fit(self,data,max_error,plr)
-#         i = 0
-#         while  
+    def fit(self,data,max_error,plr = "linear_interpolation",buffer_size = 100):
+        estimator.fit(self,data,max_error,plr)
+        i = 0
+        j = 0
+        self.segment_borders.append(0)
+        while  i+100 < len(data):
+            buffer = data[i:i+100]
+            bottom_up_estimator = bottom_up()
+            bottom_up_estimator.fit(buffer,max_error,plr)
+            left_segment = bottom_up_estimator.segments[0].data
+            self.segments.append(self.create_segment(left_segment))
+            self.labels[i:i+len(left_segment)] = j
+            i += len(left_segment)
+            self.segment_borders.append(i)            
+            j += 1
+        self.segments.append(self.create_segment(data[i:]))
+        self.labels[i:] = j
+            
+            
             
