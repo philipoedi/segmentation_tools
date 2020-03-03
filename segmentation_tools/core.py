@@ -18,9 +18,22 @@ import pdb
 
 
 class segment():
-    """
-    """
     def __init__(self,data,error):
+        """
+        
+
+        Parameters
+        ----------
+        data : TYPE
+            DESCRIPTION.
+        error : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
         self.data = data
     
         
@@ -28,6 +41,14 @@ class estimator:
     """
     """
     def __init__(self):
+        """
+        
+
+        Returns
+        -------
+        None.
+
+        """
         self.max_error = None
         self.labels = None
         self.data = None
@@ -42,6 +63,25 @@ class estimator:
         self.error_type = None
         
     def fit(self,data,max_error,plr,error_type):
+        """
+        
+
+        Parameters
+        ----------
+        data : TYPE
+            DESCRIPTION.
+        max_error : TYPE
+            DESCRIPTION.
+        plr : TYPE
+            DESCRIPTION.
+        error_type : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
         self.labels = np.zeros(data.shape[0])
         self.max_error = max_error
         self.data = data
@@ -61,6 +101,19 @@ class estimator:
             print("wrong error type")
         
     def segment_plot(self,dim = 0):
+        """
+        
+
+        Parameters
+        ----------
+        dim : TYPE, optional
+            DESCRIPTION. The default is 0.
+
+        Returns
+        -------
+        None.
+
+        """
         colors = {0:"r",1:"b"}
         k = 0
         for i in range(len(self.segments)):
@@ -76,13 +129,40 @@ class plr:
     """
     """
     def linear_regression(self,data):
+        """
+        
+
+        Parameters
+        ----------
+        data : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        error : TYPE
+            DESCRIPTION.
+
+        """
         A = np.vstack([np.arange(len(data)),np.ones(len(data))]).T
         residuals = np.linalg.lstsq(A,data,rcond=None)[1]
         error = 0 if len(residuals) == 0 else self.calculate_error_type(residuals)
         return error
     
     def linear_interpolation(self,data):
-#        pdb.set_trace()
+        """
+        
+
+        Parameters
+        ----------
+        data : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
+ #       pdb.set_trace()
         steps = np.arange(0,len(data),1)
         pred = np.interp(steps,data[0,:],data[len(data)-1,:])
         residuals = data - pred
@@ -98,9 +178,39 @@ class top_down(estimator,plr):
         self.algorithm = "top down"
 
     def improvement_in_splitting(self,data,i):
+        """
+        
+
+        Parameters
+        ----------
+        data : TYPE
+            DESCRIPTION.
+        i : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
         return(self.calculate_error(data[:i]) + self.calculate_error(data[i:]))
 
     def top_down_split(self,data,max_error):
+        """
+        
+
+        Parameters
+        ----------
+        data : TYPE
+            DESCRIPTION.
+        max_error : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
         best_so_far = np.inf
         for i in range(2,len(data)-1):
             improvement_in_approximation = self.improvement_in_splitting(data,i)
@@ -121,6 +231,25 @@ class top_down(estimator,plr):
             self.segments.append(self.create_segment(data[break_point:]))
     
     def fit(self,data,max_error,plr="linear_regression",error_type="max"):
+        """
+        
+
+        Parameters
+        ----------
+        data : TYPE
+            DESCRIPTION.
+        max_error : TYPE
+            DESCRIPTION.
+        plr : TYPE, optional
+            DESCRIPTION. The default is "linear_regression".
+        error_type : TYPE, optional
+            DESCRIPTION. The default is "max".
+
+        Returns
+        -------
+        None.
+
+        """
         estimator.fit(self,data,max_error,plr,error_type)  
         self.segment_borders.append(0)
         self.top_down_split(data,max_error)               
@@ -137,6 +266,25 @@ class bottom_up(estimator,plr):
         self.algorithm  = "bottom up"
     
     def fit(self,data,max_error,plr="linear_regression",error_type="max"):
+        """
+        
+
+        Parameters
+        ----------
+        data : TYPE
+            DESCRIPTION.
+        max_error : TYPE
+            DESCRIPTION.
+        plr : TYPE, optional
+            DESCRIPTION. The default is "linear_regression".
+        error_type : TYPE, optional
+            DESCRIPTION. The default is "max".
+
+        Returns
+        -------
+        None.
+
+        """
         estimator.fit(self,data,max_error,plr,error_type)
                        
         for i in range(0,len(data)-2,2):
@@ -176,6 +324,25 @@ class sliding_window(estimator,plr):
         self.algorithm  = "sliding window"
     
     def fit(self,data,max_error,plr="linear_regression",error_type="max"):
+        """
+        
+
+        Parameters
+        ----------
+        data : TYPE
+            DESCRIPTION.
+        max_error : TYPE
+            DESCRIPTION.
+        plr : TYPE, optional
+            DESCRIPTION. The default is "linear_regression".
+        error_type : TYPE, optional
+            DESCRIPTION. The default is "max".
+
+        Returns
+        -------
+        None.
+
+        """
         estimator.fit(self,data,max_error,plr,error_type)                      
         anchor = 0      
         finished = False
@@ -200,6 +367,27 @@ class SWAB(estimator,plr):
         self.algorithm = "SWAB"
         
     def fit(self,data,max_error,plr="linear_regression",error_type="max",buffer_size = 100):
+        """
+        
+
+        Parameters
+        ----------
+        data : TYPE
+            DESCRIPTION.
+        max_error : TYPE
+            DESCRIPTION.
+        plr : TYPE, optional
+            DESCRIPTION. The default is "linear_regression".
+        error_type : TYPE, optional
+            DESCRIPTION. The default is "max".
+        buffer_size : TYPE, optional
+            DESCRIPTION. The default is 100.
+
+        Returns
+        -------
+        None.
+
+        """
         estimator.fit(self,data,max_error,plr,error_type)
         i = 0
         j = 0
