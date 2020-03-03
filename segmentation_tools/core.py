@@ -10,8 +10,6 @@ import matplotlib.pyplot as plt
 import pdb
 
 # to do:
-# swab implementation
-# add different error types: absolute error,squared
 # remove class segmen
 # indices instead of data
 # develop better test cases
@@ -38,22 +36,30 @@ class estimator:
         self.plr = None
         self.segments = list()
         self.calculate_error = None
+        self.calculate_error_type = None
         self.segment_borders = list()
         self.labels = None
         self.error_type = None
         
-    def fit(self,data,max_error,plr):
+    def fit(self,data,max_error,plr,error_type):
         self.labels = np.zeros(data.shape[0])
         self.max_error = max_error
         self.data = data
         self.plr = plr
+        self.error_type = error_type
         if plr == "linear_regression":
             self.calculate_error = self.linear_regression      
         elif plr == "linear_interpolation":
             self.calculate_error = self.linear_interpolation
         else:
             print("wrong plr")
-    
+        if error_type == "max":
+            self.calculate_error_type  = lambda x: np.max(np.abs(x))
+        elif error_type == "mse":
+            self.calculate_error_type  = lambda x: np.mean(np.square(x))
+        else:
+            print("wrong error type")
+        
     def segment_plot(self,dim = 0):
         colors = {0:"r",1:"b"}
         k = 0
@@ -72,14 +78,16 @@ class plr:
     def linear_regression(self,data):
         A = np.vstack([np.arange(len(data)),np.ones(len(data))]).T
         residuals = np.linalg.lstsq(A,data,rcond=None)[1]
-        residuals = 0 if len(residuals) == 0 else residuals.mean()
-        return residuals
+        error = 0 if len(residuals) == 0 else self.calculate_error_type(residuals)
+        return error
     
     def linear_interpolation(self,data):
+#        pdb.set_trace()
         steps = np.arange(0,len(data),1)
         pred = np.interp(steps,data[0,:],data[len(data)-1,:])
-        sqrd_error = (data - pred)**2
-        return np.mean(sqrd_error)
+        residuals = data - pred
+        error = self.calculate_error_type(residuals)
+        return error
         
 
 class top_down(estimator,plr):
@@ -112,8 +120,8 @@ class top_down(estimator,plr):
             self.error += self.calculate_error(data[break_point:])
             self.segments.append(self.create_segment(data[break_point:]))
     
-    def fit(self,data,max_error,plr = "linear_interpolation"):
-        estimator.fit(self,data,max_error,plr)  
+    def fit(self,data,max_error,plr="linear_regression",error_type="max"):
+        estimator.fit(self,data,max_error,plr,error_type)  
         self.segment_borders.append(0)
         self.top_down_split(data,max_error)               
         for i in range(len(self.segments)):
@@ -128,27 +136,31 @@ class bottom_up(estimator,plr):
         estimator.__init__(self)
         self.algorithm  = "bottom up"
     
-    def fit(self,data,max_error,plr = "linear_interpolation"):
-        estimator.fit(self,data,max_error,plr)
+    def fit(self,data,max_error,plr="linear_regression",error_type="max"):
+        estimator.fit(self,data,max_error,plr,error_type)
                        
         for i in range(0,len(data)-2,2):
             self.segments.append(self.create_segment(data[i:i+2]))
         
         merge_cost = np.zeros(len(self.segments)-1)        
         for i in range(len(self.segments)-1):
-            merge_cost[i] = self.calculate_error(np.concatenate((self.segments[i].data,self.segments[i+1].data)))
+            merge_cost[i] = self.calculate_error(
+                np.concatenate((self.segments[i].data,self.segments[i+1].data)))
         
         while True:
             try: 
                 if np.min(merge_cost) < max_error:
                     index = np.argmin(merge_cost)
-                    self.segments[index].data = np.concatenate((self.segments[index].data,self.segments[index+1].data))
+                    self.segments[index].data = np.concatenate(
+                        (self.segments[index].data,self.segments[index+1].data))
                     del self.segments[index+1]
                     merge_cost = np.delete(merge_cost,index)
                     if index < (len(self.segments)-1):
-                        merge_cost[index] = self.calculate_error(np.concatenate((self.segments[index].data,self.segments[index+1].data)))
+                        merge_cost[index] = self.calculate_error(
+                            np.concatenate((self.segments[index].data,self.segments[index+1].data)))
                     if index != 0:
-                        merge_cost[index-1] = self.calculate_error(np.concatenate((self.segments[index-1].data,self.segments[index].data)))                    
+                        merge_cost[index-1] = self.calculate_error(
+                            np.concatenate((self.segments[index-1].data,self.segments[index].data)))                    
                 else:
                     break
             except:
@@ -163,8 +175,8 @@ class sliding_window(estimator,plr):
         estimator.__init__(self)
         self.algorithm  = "sliding window"
     
-    def fit(self,data,max_error,plr = "linear_interpolation"):
-        estimator.fit(self,data,max_error,plr)                      
+    def fit(self,data,max_error,plr="linear_regression",error_type="max"):
+        estimator.fit(self,data,max_error,plr,error_type)                      
         anchor = 0      
         finished = False
         k = 0
@@ -187,8 +199,8 @@ class SWAB(estimator,plr):
         estimator.__init__(self)
         self.algorithm = "SWAB"
         
-    def fit(self,data,max_error,plr = "linear_interpolation",buffer_size = 100):
-        estimator.fit(self,data,max_error,plr)
+    def fit(self,data,max_error,plr="linear_regression",error_type="max",buffer_size = 100):
+        estimator.fit(self,data,max_error,plr,error_type)
         i = 0
         j = 0
         self.segment_borders.append(0)
