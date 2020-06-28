@@ -1,5 +1,5 @@
 # segmentation_tools
-python implementation of the following time series segmentation algorithms:4
+python implementation of the following time series segmentation algorithms:
 
 1. Sliding Window
 2. Top Down
